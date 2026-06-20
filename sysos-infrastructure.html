@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sysos · Infrastructure Architecture v2.0</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg:         oklch(8.5% 0.014 248);
+  --surface:    oklch(13% 0.013 248);
+  --surface-2:  oklch(17% 0.013 248);
+  --surface-3:  oklch(21% 0.012 248);
+}
+
+/* ── LIGHT MODE ─────────────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg:         oklch(97% 0.006 248);
+  --surface:    oklch(100% 0 0);
+  --surface-2:  oklch(95% 0.005 248);
+  --surface-3:  oklch(91% 0.006 248);
+
+  --prod-zone:   oklch(97.5% 0.015 38);
+  --prod-border: oklch(75% 0.10 40);
+  --prod-ghost:  oklch(93% 0.03 38);
+
+  --dev-zone:    oklch(96.5% 0.015 210);
+  --dev-border:  oklch(72% 0.10 193);
+  --dev-ghost:   oklch(92% 0.03 210);
+
+  --edge-zone:   oklch(95% 0.015 268);
+  --edge-border: oklch(68% 0.08 278);
+
+  --t1: oklch(14% 0.010 248);
+  --t2: oklch(30% 0.010 248);
+  --t3: oklch(48% 0.008 248);
+  --t4: oklch(62% 0.006 248);
+
+  --border: oklch(84% 0.006 248);
+
+  /* Icon / element bg variables — light overrides */
+  --ico-edge:    oklch(88% 0.06 278);
+  --ico-edge-hi: oklch(84% 0.08 278);
+  --ico-prod:    oklch(91% 0.06 38);
+  --ico-ok:      oklch(88% 0.07 143);
+  --ico-ai:      oklch(88% 0.06 290);
+  --ico-dev:     oklch(88% 0.06 210);
+  --ico-sec:     oklch(92% 0.05 14);
+  --ico-gray:    oklch(89% 0.03 248);
+
+  --edge-chip-bg:  oklch(89% 0.04 268);
+  --edge-card-bg:  oklch(96% 0.015 268);
+  --hex-prod:      oklch(91% 0.06 40);
+  --hex-dev:       oklch(89% 0.07 210);
+  --worker-prod:   oklch(97% 0.02 38);
+  --worker-dev:    oklch(96% 0.02 210);
+  --tooltip-bg:    oklch(99% 0.004 248);
+}
+
+[data-theme="light"] .bg-grid { opacity:.18; }
+[data-theme="light"] .bg-glow {
+  background:
+    radial-gradient(ellipse 55% 80% at 12% 65%, oklch(82% 0.09 40 / .15) 0%, transparent 65%),
+    radial-gradient(ellipse 55% 80% at 88% 65%, oklch(80% 0.09 210 / .15) 0%, transparent 65%),
+    radial-gradient(ellipse 90% 35% at 50% 22%, oklch(78% 0.07 268 / .12) 0%, transparent 70%);
+}
+[data-theme="light"] .edge         { background:oklch(95% 0.015 268); }
+[data-theme="light"] .edge-card    { background:var(--edge-card-bg); }
+[data-theme="light"] .edge-icon-wrap { background:var(--ico-edge-hi); }
+[data-theme="light"] .edge-chip    { background:var(--edge-chip-bg); color:oklch(38% 0.08 278); }
+[data-theme="light"] .cicd         { background:oklch(99% 0.004 248); }
+[data-theme="light"] .cicd::before { background:linear-gradient(90deg, oklch(88% 0.05 192 / .2) 0%, transparent 40%, oklch(92% 0.05 40 / .2) 100%); }
+[data-theme="light"] .cicd-node    { background:oklch(95% 0.006 248); }
+[data-theme="light"] .svc-card     { background:oklch(98% 0.004 248 / .9); backdrop-filter:none; }
+[data-theme="light"] .worker-card.prod { background:var(--worker-prod); }
+[data-theme="light"] .worker-card.dev  { background:var(--worker-dev); }
+[data-theme="light"] .worker-hex.prod  { background:var(--hex-prod); }
+[data-theme="light"] .worker-hex.dev   { background:var(--hex-dev); }
+[data-theme="light"] .monitoring   { background:oklch(100% 0 0); }
+[data-theme="light"] .legend       { background:oklch(100% 0 0); }
+[data-theme="light"] .ticker-wrap  { background:oklch(100% 0 0); }
+[data-theme="light"] .header       { background:oklch(100% 0 0); }
+[data-theme="light"] .internet-card{ background:oklch(100% 0 0); }
+[data-theme="light"] [data-tip]:hover::after {
+  background:var(--tooltip-bg); border-color:var(--border);
+  box-shadow:0 8px 24px oklch(80% 0 0 / .25);
+}
+
+:root {
+
+  --prod:       oklch(70% 0.18 40);
+  --prod-dim:   oklch(52% 0.13 40);
+  --prod-muted: oklch(34% 0.08 40);
+  --prod-ghost: oklch(16% 0.05 40);
+  --prod-zone:  oklch(11.5% 0.04 38);
+  --prod-border:oklch(28% 0.09 40);
+
+  --dev:        oklch(67% 0.17 193);
+  --dev-dim:    oklch(49% 0.12 193);
+  --dev-muted:  oklch(32% 0.08 193);
+  --dev-ghost:  oklch(15% 0.05 193);
+  --dev-zone:   oklch(10.5% 0.04 210);
+  --dev-border: oklch(26% 0.09 193);
+
+  --edge:       oklch(64% 0.14 278);
+  --edge-dim:   oklch(44% 0.10 278);
+  --edge-zone:  oklch(10% 0.03 268);
+  --edge-border:oklch(24% 0.07 268);
+
+  --sec:        oklch(62% 0.17 14);
+  --ok:         oklch(66% 0.17 143);
+  --warn:       oklch(74% 0.15 82);
+
+  --t1: oklch(93% 0.007 248);
+  --t2: oklch(74% 0.007 248);
+  --t3: oklch(55% 0.007 248);
+  --t4: oklch(38% 0.007 248);
+
+  --border: oklch(19% 0.009 248);
+
+  --sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Icon / element bg variables — dark defaults */
+  --ico-edge:    oklch(18% 0.04 278);
+  --ico-edge-hi: oklch(18% 0.07 278);
+  --ico-prod:    oklch(18% 0.04 40);
+  --ico-ok:      oklch(18% 0.04 143);
+  --ico-ai:      oklch(17% 0.05 290);
+  --ico-dev:     oklch(16% 0.04 210);
+  --ico-sec:     oklch(15% 0.04 14);
+  --ico-gray:    oklch(15% 0.03 248);
+
+  --edge-chip-bg:  oklch(16% 0.04 268);
+  --edge-card-bg:  oklch(12.5% 0.025 268);
+  --hex-prod:      oklch(20% 0.07 40);
+  --hex-dev:       oklch(18% 0.07 210);
+  --worker-prod:   oklch(15% 0.05 40);
+  --worker-dev:    oklch(14% 0.05 210);
+  --tooltip-bg:    oklch(16% 0.012 248);
+}
+
+/* ── THEME TOGGLE BUTTON ──────────────────────────────────────── */
+.theme-btn {
+  display:flex; align-items:center; gap:6px;
+  padding:5px 12px; border-radius:20px; cursor:pointer;
+  border:1px solid var(--border); background:var(--surface-2);
+  color:var(--t2); font-size:10px; font-weight:600; font-family:var(--mono);
+  transition:border-color .2s, background .2s, color .2s;
+  user-select:none; flex-shrink:0;
+}
+.theme-btn:hover { border-color:var(--edge-dim); color:var(--t1); }
+.theme-btn svg { width:13px; height:13px; flex-shrink:0; }
+
+html { font-family: var(--sans); background: var(--bg); color: var(--t1); font-size:13px; line-height:1.5; -webkit-font-smoothing:antialiased; }
+body { min-height:100vh; overflow-x:hidden; }
+
+/* ── BACKGROUND ───────────────────────────────────────────────── */
+.bg-grid {
+  position:fixed; inset:0; pointer-events:none; z-index:0;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size:44px 44px;
+  opacity:.35;
+}
+.bg-glow {
+  position:fixed; inset:0; pointer-events:none; z-index:0;
+  background:
+    radial-gradient(ellipse 55% 80% at 12% 65%, oklch(15% 0.06 40 / .22) 0%, transparent 65%),
+    radial-gradient(ellipse 55% 80% at 88% 65%, oklch(13% 0.06 210 / .22) 0%, transparent 65%),
+    radial-gradient(ellipse 90% 35% at 50% 22%, oklch(13% 0.05 268 / .18) 0%, transparent 70%);
+}
+
+/* ── LAYOUT ───────────────────────────────────────────────────── */
+.page { position:relative; z-index:1; max-width:1440px; margin:0 auto; padding:20px 24px 40px; }
+
+/* SVG overlay */
+#flow-svg {
+  position:absolute; top:0; left:0; pointer-events:none; z-index:2; overflow:visible;
+}
+
+/* ── TICKER ───────────────────────────────────────────────────── */
+.ticker-wrap {
+  overflow:hidden; background:var(--surface); border:1px solid var(--border);
+  border-radius:8px 8px 0 0; height:28px; display:flex; align-items:center;
+  border-bottom:none; position:relative;
+}
+.ticker-label {
+  flex-shrink:0; padding:0 14px; font-family:var(--mono); font-size:9px;
+  font-weight:600; letter-spacing:.08em; color:var(--ok); text-transform:uppercase;
+  border-right:1px solid var(--border); height:100%; display:flex; align-items:center; gap:6px;
+}
+.ticker-label::before {
+  content:''; width:6px; height:6px; border-radius:50%; background:var(--ok);
+  animation:pulse-dot 2s ease-in-out infinite;
+}
+.ticker-inner { flex:1; overflow:hidden; position:relative; }
+.ticker-track {
+  display:inline-flex; gap:40px; white-space:nowrap;
+  animation:ticker-scroll 40s linear infinite;
+  font-family:var(--mono); font-size:9px; color:var(--t3);
+}
+.ticker-item { display:inline-flex; align-items:center; gap:8px; }
+.ticker-item span { color:var(--t2); }
+
+/* ── HEADER ───────────────────────────────────────────────────── */
+.header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 20px; background:var(--surface);
+  border:1px solid var(--border); border-top:none;
+  border-radius:0 0 12px 12px; margin-bottom:16px;
+}
+.header-left { display:flex; align-items:center; gap:12px; }
+.logo {
+  width:38px; height:38px; border-radius:9px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-weight:800; font-size:17px; color:oklch(98% 0 0);
+  background:linear-gradient(135deg, var(--prod), var(--edge));
+}
+.header-title { font-size:15px; font-weight:700; color:var(--t1); }
+.header-sub { font-size:10px; color:var(--t3); font-family:var(--mono); margin-top:1px; }
+.header-right { display:flex; align-items:center; gap:8px; }
+
+/* ── BADGES ───────────────────────────────────────────────────── */
+.badge {
+  display:inline-flex; align-items:center; gap:5px;
+  padding:3px 10px; border-radius:20px; font-size:10px;
+  font-weight:600; font-family:var(--mono); white-space:nowrap;
+}
+.badge-ok   { background:oklch(66% 0.17 143 / .12); color:var(--ok); border:1px solid oklch(66% 0.17 143 / .3); }
+.badge-ok::before { content:''; width:5px; height:5px; border-radius:50%; background:var(--ok); animation:pulse-dot 2s ease-in-out infinite; }
+.badge-dim  { background:var(--surface-2); color:var(--t3); border:1px solid var(--border); }
+.badge-prod { background:oklch(70% 0.18 40 / .12); color:var(--prod); border:1px solid oklch(70% 0.18 40 / .3); }
+.badge-dev  { background:oklch(67% 0.17 193 / .12); color:var(--dev); border:1px solid oklch(67% 0.17 193 / .3); }
+
+/* ── CICD ─────────────────────────────────────────────────────── */
+.cicd {
+  background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  padding:16px 20px; margin-bottom:16px; overflow:hidden; position:relative;
+}
+.cicd::before {
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(90deg, oklch(14% 0.05 192 / .15) 0%, transparent 40%, oklch(14% 0.05 40 / .15) 100%);
+}
+.cicd-label { font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--t4); font-family:var(--mono); margin-bottom:12px; }
+.cicd-flow { display:flex; align-items:center; gap:0; overflow-x:auto; padding-bottom:2px; }
+.cicd-step { flex-shrink:0; display:flex; flex-direction:column; align-items:center; }
+.cicd-node {
+  padding:10px 12px; border-radius:9px; border:1px solid var(--border);
+  background:var(--surface-2); text-align:center; cursor:default;
+  transition:border-color .25s, box-shadow .25s; min-width:90px;
+}
+.cicd-icon { font-size:16px; display:block; margin-bottom:3px; }
+.cicd-name { font-size:10px; font-weight:600; color:var(--t2); }
+.cicd-desc { font-size:8px; color:var(--t4); font-family:var(--mono); margin-top:1px; }
+
+.cicd-arrow {
+  width:30px; height:2px; flex-shrink:0; background:var(--border); position:relative; margin:0 2px;
+}
+.cicd-arrow::after {
+  content:''; position:absolute; right:-5px; top:50%; transform:translateY(-50%);
+  border:4px solid transparent; border-left-color:var(--border);
+}
+.cicd-arrow.dev  { background:var(--dev-muted); }
+.cicd-arrow.dev::after  { border-left-color:var(--dev-muted); }
+.cicd-arrow.prod { background:var(--prod-muted); }
+.cicd-arrow.prod::after { border-left-color:var(--prod-muted); }
+
+.cicd-gate {
+  flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:3px;
+  padding:8px 12px; margin:0 8px; border-radius:20px;
+  border:1px dashed var(--prod-muted); background:var(--prod-ghost); color:var(--prod-dim);
+  font-size:9px; font-weight:700; font-family:var(--mono); text-align:center; line-height:1.3;
+}
+
+/* ── INTERNET LAYER ───────────────────────────────────────────── */
+.internet-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+.internet-card {
+  display:flex; align-items:center; gap:10px; padding:10px 16px;
+  border:1px solid var(--border); border-radius:10px; background:var(--surface);
+}
+.internet-icon { font-size:18px; flex-shrink:0; }
+.internet-name { font-size:11px; font-weight:600; color:var(--t2); }
+.internet-desc { font-size:9px; color:var(--t4); font-family:var(--mono); margin-top:1px; }
+.dns-tag {
+  margin-left:auto; padding:3px 9px; border-radius:6px; font-family:var(--mono);
+  font-size:10px; font-weight:600;
+}
+.dns-tag.prod { background:var(--prod-ghost); color:var(--prod); border:1px solid var(--prod-muted); }
+.dns-tag.dev  { background:var(--dev-ghost);  color:var(--dev);  border:1px solid var(--dev-muted); }
+
+/* ── DOWN CONNECTOR ───────────────────────────────────────────── */
+.down-connector { display:flex; justify-content:center; height:22px; position:relative; }
+.down-connector::before {
+  content:''; position:absolute; top:0; left:50%; width:1px; height:100%;
+  background:linear-gradient(to bottom, var(--edge-border), transparent);
+}
+
+/* ── EDGE SECTION ─────────────────────────────────────────────── */
+.edge {
+  background:var(--edge-zone); border:1px solid var(--edge-border);
+  border-radius:14px; padding:16px 20px; margin-bottom:10px; position:relative; overflow:hidden;
+}
+.edge::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:1px;
+  background:linear-gradient(90deg, transparent, var(--edge), transparent);
+}
+.edge-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.edge-title { display:flex; align-items:center; gap:10px; }
+.edge-icon-wrap {
+  width:36px; height:36px; border-radius:9px; background:var(--ico-edge-hi);
+  display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;
+}
+.edge-name { font-size:13px; font-weight:700; color:var(--edge); }
+.edge-sub  { font-size:9px; color:var(--t4); font-family:var(--mono); margin-top:1px; }
+.edge-chips { display:flex; align-items:center; gap:6px; margin-bottom:14px; flex-wrap:wrap; }
+.edge-chip {
+  font-size:9px; font-family:var(--mono); padding:2px 8px; border-radius:4px;
+  background:var(--edge-chip-bg); color:var(--edge-dim); border:1px solid var(--edge-border);
+}
+.edge-services { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
+.edge-card {
+  padding:10px; border-radius:9px; border:1px solid var(--edge-border);
+  background:var(--edge-card-bg); text-align:center; cursor:default;
+  transition:border-color .2s, transform .15s;
+}
+.edge-card:hover { border-color:var(--edge-dim); transform:translateY(-1px); }
+.edge-card-icon { font-size:18px; margin-bottom:4px; }
+.edge-card-name { font-size:10px; font-weight:700; color:var(--edge); }
+.edge-card-desc { font-size:8px; color:var(--t4); font-family:var(--mono); margin-top:2px; line-height:1.4; }
+
+/* ── ENV SPLIT ────────────────────────────────────────────────── */
+.env-fork { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.env-col {
+  border-radius:14px; padding:16px; position:relative; overflow:hidden;
+}
+.env-col.prod { background:var(--prod-zone); border:1px solid var(--prod-border); }
+.env-col.dev  { background:var(--dev-zone);  border:1px solid var(--dev-border); }
+
+.env-col::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:1px;
+  background:linear-gradient(90deg, transparent, var(--prod), transparent);
+  pointer-events:none;
+}
+.env-col.dev::before {
+  background:linear-gradient(90deg, transparent, var(--dev), transparent);
+}
+
+.env-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid var(--border); }
+.env-title { display:flex; align-items:center; gap:7px; font-size:12px; font-weight:800; letter-spacing:.04em; }
+.env-title.prod { color:var(--prod); }
+.env-title.dev  { color:var(--dev); }
+.env-domain { font-family:var(--mono); font-size:9px; color:var(--t4); }
+
+/* Worker card */
+.worker-card {
+  border-radius:10px; padding:12px 14px; margin-bottom:12px; position:relative;
+}
+.worker-card.prod { background:var(--worker-prod);  border:1px solid var(--prod-border); }
+.worker-card.dev  { background:var(--worker-dev);   border:1px solid var(--dev-border); }
+
+.worker-head { display:flex; align-items:flex-start; gap:10px; margin-bottom:8px; }
+.worker-hex {
+  width:32px; height:32px; border-radius:8px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+}
+.worker-hex.prod { background:var(--hex-prod); }
+.worker-hex.dev  { background:var(--hex-dev); }
+.worker-name { font-size:12px; font-weight:700; }
+.worker-name.prod { color:var(--prod); }
+.worker-name.dev  { color:var(--dev); }
+.worker-sub { font-size:8px; color:var(--t4); font-family:var(--mono); margin-top:2px; }
+.worker-tags { display:flex; gap:4px; flex-wrap:wrap; margin-top:6px; }
+.wtag {
+  font-size:8px; font-family:var(--mono); padding:2px 6px; border-radius:4px;
+  background:var(--surface-2); color:var(--t3); border:1px solid var(--border);
+}
+
+/* Service grid */
+.sec-label {
+  font-size:8px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--t4); font-family:var(--mono); margin-bottom:8px;
+}
+.svc-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:10px; }
+.svc-card {
+  padding:9px 10px; border-radius:8px; border:1px solid var(--border);
+  background:var(--surface-2); backdrop-filter:blur(4px);
+  transition:border-color .2s, transform .15s; cursor:default; position:relative;
+}
+.svc-card:hover { transform:translateY(-1px); }
+.env-col.prod .svc-card:hover { border-color:var(--prod-muted); }
+.env-col.dev  .svc-card:hover { border-color:var(--dev-muted); }
+.svc-card.full { grid-column:1/-1; }
+.svc-head { display:flex; align-items:center; gap:7px; margin-bottom:4px; }
+.svc-ico {
+  width:24px; height:24px; border-radius:5px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+}
+.svc-name { font-size:10px; font-weight:600; color:var(--t1); flex:1; }
+.svc-bind { font-size:8px; font-family:var(--mono); color:var(--t4); margin-top:1px; }
+.svc-detail { font-size:8px; color:var(--t4); font-family:var(--mono); }
+
+/* Status dot */
+.dot {
+  width:6px; height:6px; border-radius:50%; flex-shrink:0;
+  background:var(--ok); animation:pulse-dot 2.5s ease-in-out infinite;
+}
+.dot.prod { background:var(--prod); }
+.dot.dev  { background:var(--dev); }
+.dot.ml   { margin-left:auto; }
+
+/* External services divider */
+.ext-divider { margin-top:10px; padding-top:10px; border-top:1px solid var(--border); }
+
+/* ── MONITORING ───────────────────────────────────────────────── */
+.monitoring {
+  margin-top:12px; background:var(--surface); border:1px solid var(--border);
+  border-radius:14px; padding:16px 20px;
+}
+.mon-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+
+/* ── LEGEND ───────────────────────────────────────────────────── */
+.legend {
+  margin-top:12px; display:flex; align-items:center; gap:20px; flex-wrap:wrap;
+  padding:10px 16px; background:var(--surface); border:1px solid var(--border); border-radius:10px;
+  font-size:10px;
+}
+.legend-label { font-family:var(--mono); font-size:9px; font-weight:700; color:var(--t4); letter-spacing:.06em; margin-right:4px; }
+.legend-item { display:flex; align-items:center; gap:6px; color:var(--t3); }
+.legend-swatch { width:10px; height:10px; border-radius:3px; }
+.legend-note { margin-left:auto; font-family:var(--mono); font-size:8px; color:var(--t4); }
+
+/* ── TOOLTIP ──────────────────────────────────────────────────── */
+[data-tip] { position:relative; }
+[data-tip]:hover::after {
+  content:attr(data-tip); position:absolute; bottom:calc(100% + 8px); left:50%;
+  transform:translateX(-50%); background:var(--tooltip-bg); border:1px solid var(--border);
+  color:var(--t2); font-size:9px; font-family:var(--mono); padding:6px 10px;
+  border-radius:6px; white-space:nowrap; z-index:200; pointer-events:none;
+  box-shadow:0 8px 24px oklch(4% 0 0 / .5);
+}
+
+/* ── ANIMATIONS ───────────────────────────────────────────────── */
+@keyframes pulse-dot {
+  0%,100%{ opacity:1; transform:scale(1); }
+  50%    { opacity:.5; transform:scale(.75); }
+}
+@keyframes ticker-scroll {
+  from { transform:translateX(0); }
+  to   { transform:translateX(-50%); }
+}
+@keyframes dash-anim {
+  to { stroke-dashoffset:-18; }
+}
+@keyframes particle-prod {
+  0%  { offset-distance:0%;   opacity:0; }
+  8%  { opacity:1; }
+  92% { opacity:1; }
+  100%{ offset-distance:100%; opacity:0; }
+}
+@keyframes particle-dev {
+  0%  { offset-distance:0%;   opacity:0; }
+  8%  { opacity:1; }
+  92% { opacity:1; }
+  100%{ offset-distance:100%; opacity:0; }
+}
+@keyframes fade-up {
+  from{ opacity:0; transform:translateY(14px); }
+  to  { opacity:1; transform:translateY(0);    }
+}
+@keyframes cicd-flash-dev {
+  0%,100%{ border-color:var(--border);        box-shadow:none; }
+  50%    { border-color:var(--dev);            box-shadow:0 0 14px oklch(67% 0.17 193 / .4); }
+}
+@keyframes cicd-flash-prod {
+  0%,100%{ border-color:var(--border);        box-shadow:none; }
+  50%    { border-color:var(--prod);           box-shadow:0 0 14px oklch(70% 0.18 40 / .4); }
+}
+
+/* ── ACCESSIBILITY ────────────────────────────────────────────────── */
+.skip-link {
+  position:absolute; top:-100px; left:16px; z-index:9999;
+  padding:6px 14px; border-radius:6px; font-size:12px; font-weight:600;
+  background:var(--edge); color:oklch(98% 0 0);
+  transition:top .15s ease-out; text-decoration:none;
+}
+.skip-link:focus { top:8px; outline:2px solid oklch(98% 0 0); outline-offset:2px; }
+:focus-visible {
+  outline:2px solid var(--edge); outline-offset:2px; border-radius:4px;
+}
+button:focus-visible, .theme-btn:focus-visible {
+  outline:2px solid var(--edge); outline-offset:3px; border-radius:20px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;
+  }
+}
+
+/* entrance stagger */
+.enter{ opacity:0; }
+.enter.v1{ animation:fade-up .5s .10s ease-out forwards; }
+.enter.v2{ animation:fade-up .5s .18s ease-out forwards; }
+.enter.v3{ animation:fade-up .5s .26s ease-out forwards; }
+.enter.v4{ animation:fade-up .5s .34s ease-out forwards; }
+.enter.v5{ animation:fade-up .5s .42s ease-out forwards; }
+.enter.v6{ animation:fade-up .5s .50s ease-out forwards; }
+.enter.v7{ animation:fade-up .5s .58s ease-out forwards; }
+</style>
+</head>
+<body>
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<div class="bg-grid" aria-hidden="true"></div>
+<div class="bg-glow" aria-hidden="true"></div>
+
+<div class="page" id="page" role="main" id="main-content">
+<svg id="flow-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+
+<!-- ── TICKER ──────────────────────────────────────────────────── -->
+<div class="ticker-wrap enter v1">
+  <div class="ticker-label">Live</div>
+  <div class="ticker-inner" aria-live="polite" aria-label="Live system status">
+    <div class="ticker-track" id="ticker">
+      <span class="ticker-item">Workers (prod) <span>healthy</span></span>
+      <span class="ticker-item">Workers (dev) <span>healthy</span></span>
+      <span class="ticker-item">D1 sysos-db <span>0ms latency</span></span>
+      <span class="ticker-item">D1 sysos-db-dev <span>isolated</span></span>
+      <span class="ticker-item">R2 sysos-assets <span>CDN active</span></span>
+      <span class="ticker-item">WAF <span>block mode (prod)</span></span>
+      <span class="ticker-item">WAF <span>log mode (dev)</span></span>
+      <span class="ticker-item">TLS 1.3 <span>enabled</span></span>
+      <span class="ticker-item">KV sysos-kv <span>global</span></span>
+      <span class="ticker-item">Workers AI <span>llama-3.1-8b</span></span>
+      <span class="ticker-item">Neon PostgreSQL (prod) <span>connected</span></span>
+      <span class="ticker-item">Neon PostgreSQL (dev) <span>connected</span></span>
+      <span class="ticker-item">Auth /api/auth <span>jwt · 8h</span></span>
+      <span class="ticker-item">CI/CD <span>dev auto · prod manual</span></span>
+      <span class="ticker-item">Autoscaling <span>unlimited · 300+ PoPs</span></span>
+      <!-- mirror for seamless loop -->
+      <span class="ticker-item">Workers (prod) <span>healthy</span></span>
+      <span class="ticker-item">Workers (dev) <span>healthy</span></span>
+      <span class="ticker-item">D1 sysos-db <span>0ms latency</span></span>
+      <span class="ticker-item">D1 sysos-db-dev <span>isolated</span></span>
+      <span class="ticker-item">R2 sysos-assets <span>CDN active</span></span>
+      <span class="ticker-item">WAF <span>block mode (prod)</span></span>
+      <span class="ticker-item">WAF <span>log mode (dev)</span></span>
+      <span class="ticker-item">TLS 1.3 <span>enabled</span></span>
+      <span class="ticker-item">KV sysos-kv <span>global</span></span>
+      <span class="ticker-item">Workers AI <span>llama-3.1-8b</span></span>
+      <span class="ticker-item">Neon PostgreSQL (prod) <span>connected</span></span>
+      <span class="ticker-item">Neon PostgreSQL (dev) <span>connected</span></span>
+      <span class="ticker-item">Auth /api/auth <span>jwt · 8h</span></span>
+      <span class="ticker-item">CI/CD <span>dev auto · prod manual</span></span>
+      <span class="ticker-item">Autoscaling <span>unlimited · 300+ PoPs</span></span>
+    </div>
+  </div>
+</div>
+
+<!-- ── HEADER ───────────────────────────────────────────────────── -->
+<header class="header enter v1">
+  <div class="header-left">
+    <div class="logo" style="background:none;padding:0;width:auto;">
+      <svg width="54" height="30" viewBox="0 0 241 136" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Sysos">
+        <path d="M59.9264 51.1424C61.0976 51.7931 62.5291 52.1184 64.2208 52.1184H123.952C128.116 52.1184 132.541 52.4437 137.226 53.0944C142.041 53.6149 145.749 54.2005 148.352 54.8512L152.451 55.8272C157.136 56.608 162.016 58.4299 167.091 61.2928C176.201 66.7584 180.755 74.2411 180.755 83.7408V84.912C179.454 84.1312 177.892 83.7408 176.07 83.7408H115.949C111.785 83.7408 107.425 83.4155 102.87 82.7648C98.3157 82.1141 94.7371 81.4635 92.1344 80.8128L88.2304 79.8368C83.5456 79.1861 78.6656 77.3643 73.5904 74.3712C64.4811 69.0357 59.9264 61.6181 59.9264 52.1184V51.1424ZM28.1088 71.0528C19.1296 62.9845 14.64 53.2896 14.64 41.968C14.64 30.5163 19.1296 20.7563 28.1088 12.688C37.7387 4.22933 49.9061 0 64.6112 0H240.682L217.843 31.6224H64.6112C58.8853 31.6224 56.0224 35.0059 56.0224 41.7728V52.1184C56.0224 57.0635 57.0635 61.5531 59.1456 65.5872C61.3579 69.4912 64.0256 72.5493 67.1488 74.7616C70.272 76.9739 73.3952 78.7957 76.5184 80.2272C79.6416 81.6587 82.3093 82.6347 84.5216 83.1552L87.6448 83.7408H64.8064C49.9712 83.7408 37.7387 79.5115 28.1088 71.0528ZM212.573 64.6112C221.552 72.6795 226.042 82.4395 226.042 93.8912C226.042 105.343 221.552 115.103 212.573 123.171C202.943 131.63 190.775 135.859 176.07 135.859H0L22.8384 104.042H176.07C181.796 104.042 184.659 100.658 184.659 93.8912V83.7408C184.659 78.7957 183.553 74.3061 181.341 70.272C179.259 66.2379 176.656 63.1797 173.533 61.0976C170.41 58.8853 167.286 57.0635 164.163 55.632C161.04 54.2005 158.372 53.2245 156.16 52.704L153.037 52.1184H175.875C190.71 52.1184 202.943 56.2827 212.573 64.6112Z" fill="#7633CD"/>
+      </svg>
+    </div>
+    <div>
+      <div class="header-title">Sysos Platform</div>
+      <div class="header-sub">Infrastructure Architecture · v2.0 · Cloudflare Edge · Multi-Environment</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="badge badge-ok">2 environments live</div>
+    <div class="badge badge-prod">Production · sysos.app</div>
+    <div class="badge badge-dev">Development · dev.sysos.app</div>
+    <div class="badge badge-dim">v2.0 · June 2026</div>
+    <button class="theme-btn" id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode" aria-pressed="false" aria-label="Switch to light mode">
+      <svg id="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg id="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <span id="theme-label">Light</span>
+    </button>
+  </div>
+</header>
+
+<!-- ── CI/CD PIPELINE ──────────────────────────────────────────── -->
+<div class="cicd enter v2" id="cicd">
+  <div class="cicd-label">CI/CD Pipeline · GitHub Actions · dev auto-deploy · prod manual promote</div>
+  <div class="cicd-flow">
+    <div class="cicd-step"><div class="cicd-node" id="cs-github"><span class="cicd-icon">⬡</span><div class="cicd-name">GitHub</div><div class="cicd-desc">push to main</div></div></div>
+    <div class="cicd-arrow"></div>
+    <div class="cicd-step"><div class="cicd-node" id="cs-build"><span class="cicd-icon">⚙</span><div class="cicd-name">Build</div><div class="cicd-desc">opennext build</div></div></div>
+    <div class="cicd-arrow dev"></div>
+    <div class="cicd-step"><div class="cicd-node" id="cs-migdev"><span class="cicd-icon">▦</span><div class="cicd-name">D1 Migrate</div><div class="cicd-desc">sysos-db-dev</div></div></div>
+    <div class="cicd-arrow dev"></div>
+    <div class="cicd-step"><div class="cicd-node" id="cs-depdev"><span class="cicd-icon">🔵</span><div class="cicd-name">Deploy Dev</div><div class="cicd-desc">auto on push</div></div></div>
+    <div class="cicd-arrow dev"></div>
+    <div class="cicd-step"><div class="cicd-node" id="cs-smoke"><span class="cicd-icon">✓</span><div class="cicd-name">Smoke Tests</div><div class="cicd-desc">/api/health</div></div></div>
+    <div class="cicd-gate">⚠<br>manual<br>promote</div>
+    <div class="cicd-step"><div class="cicd-node" id="cs-migprod"><span class="cicd-icon">▦</span><div class="cicd-name">D1 Migrate</div><div class="cicd-desc">sysos-db</div></div></div>
+    <div class="cicd-arrow prod"></div>
+    <div class="cicd-step"><div class="cicd-node" id="cs-depprod"><span class="cicd-icon">🟠</span><div class="cicd-name">Deploy Prod</div><div class="cicd-desc">wrangler deploy</div></div></div>
+    <div class="cicd-arrow prod"></div>
+    <div class="cicd-step"><div class="cicd-node" id="cs-health"><span class="cicd-icon">♡</span><div class="cicd-name">Health Check</div><div class="cicd-desc">verified stable</div></div></div>
+  </div>
+</div>
+
+<!-- ── INTERNET LAYER ───────────────────────────────────────────── -->
+<div class="internet-row enter v3" id="internet-row">
+  <div class="internet-card">
+    <div class="internet-icon">👤</div>
+    <div>
+      <div class="internet-name">Production Users</div>
+      <div class="internet-desc">Browser · Mobile · API clients</div>
+    </div>
+    <div class="dns-tag prod" id="dns-prod">*.sysos.app</div>
+  </div>
+  <div class="internet-card">
+    <div class="internet-icon">🔧</div>
+    <div>
+      <div class="internet-name">Engineering &amp; QA</div>
+      <div class="internet-desc">Internal testing · Validation · Never customers</div>
+    </div>
+    <div class="dns-tag dev" id="dns-dev">*.dev.sysos.app</div>
+  </div>
+</div>
+<div class="down-connector"></div>
+
+<!-- ── CLOUDFLARE EDGE ──────────────────────────────────────────── -->
+<div class="edge enter v4" id="edge">
+  <div class="edge-top">
+    <div class="edge-title">
+      <div class="edge-icon-wrap">☁</div>
+      <div>
+        <div class="edge-name">Cloudflare Edge Network</div>
+        <div class="edge-sub">Global · 300+ PoPs · Autoscales to any traffic · Zero cold starts · &lt;5ms isolate start</div>
+      </div>
+    </div>
+    <div class="badge badge-ok">Global active · Autoscaling on</div>
+  </div>
+  <div class="edge-chips">
+    <span class="edge-chip">Wildcard DNS · *.sysos.app + *.dev.sysos.app</span>
+    <span class="edge-chip">Workers isolate: &lt;5ms start</span>
+    <span class="edge-chip">Unlimited concurrency</span>
+    <span class="edge-chip">Scale-to-zero</span>
+    <span class="edge-chip">128MB per request</span>
+    <span class="edge-chip">30s CPU / paid plan</span>
+  </div>
+  <div class="edge-services" id="edge-svcs">
+    <div class="edge-card" data-tip="OWASP + Managed ruleset · Block (prod) · Log (dev)">
+      <div class="edge-card-icon">🛡</div>
+      <div class="edge-card-name">WAF</div>
+      <div class="edge-card-desc">OWASP + Managed<br>Block / Log per env</div>
+    </div>
+    <div class="edge-card" data-tip="L3/L4/L7 DDoS · Always-on · No config required">
+      <div class="edge-card-icon">🌐</div>
+      <div class="edge-card-name">DDoS Protection</div>
+      <div class="edge-card-desc">L3 / L4 / L7<br>Always-on · Auto</div>
+    </div>
+    <div class="edge-card" data-tip="1000 req/min prod · 5000 req/min dev · Per-tenant via KV">
+      <div class="edge-card-icon">⏱</div>
+      <div class="edge-card-name">Rate Limiting</div>
+      <div class="edge-card-desc">1k/min (prod)<br>Per-tenant via KV</div>
+    </div>
+    <div class="edge-card" data-tip="TLS 1.3 only (prod) · TLS 1.2+ (dev) · HSTS preload · Authenticated Origin Pulls">
+      <div class="edge-card-icon">🔒</div>
+      <div class="edge-card-name">SSL / TLS</div>
+      <div class="edge-card-desc">TLS 1.3 (prod)<br>HSTS preload</div>
+    </div>
+    <div class="edge-card" data-tip="Bot Fight Mode enabled in production · Managed challenge">
+      <div class="edge-card-icon">🤖</div>
+      <div class="edge-card-name">Bot Protection</div>
+      <div class="edge-card-desc">Fight Mode (prod)<br>Off in dev</div>
+    </div>
+  </div>
+</div>
+<div class="down-connector"></div>
+
+<!-- ── ENVIRONMENT FORK ─────────────────────────────────────────── -->
+<div class="env-fork enter v5">
+
+  <!-- ── PRODUCTION ─────────────────────────────────────────────── -->
+  <div class="env-col prod" id="col-prod">
+    <div class="env-head">
+      <div class="env-title prod"><div class="dot"></div>PRODUCTION</div>
+      <div class="env-domain">sysos.app · *.sysos.app · Existing worker</div>
+    </div>
+
+    <!-- Workers -->
+    <div class="worker-card prod" id="workers-prod">
+      <div class="worker-head">
+        <div class="worker-hex prod">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 1L15 4.8V13.2L9 17L3 13.2V4.8L9 1Z" stroke="var(--prod)" stroke-width="1.4"/><path d="M9 5.5L12 7.5V11.5L9 13.5L6 11.5V7.5L9 5.5Z" fill="var(--prod)" opacity=".45"/></svg>
+        </div>
+        <div style="flex:1">
+          <div class="worker-name prod">Cloudflare Workers · <span style="opacity:.7">sysos</span></div>
+          <div class="worker-sub">Next.js 15 App Router · opennextjs-cloudflare · Edge SSR</div>
+          <div class="worker-tags" style="margin-top:6px">
+            <span class="wtag">nodejs_compat</span><span class="wtag">128MB</span>
+            <span class="wtag">30s timeout</span><span class="wtag">1k subreqs</span>
+            <span class="wtag">sampling: 0.1</span><span class="wtag">LOG_LEVEL: error</span>
+          </div>
+        </div>
+        <div class="dot ml"></div>
+      </div>
+    </div>
+
+    <!-- Cloudflare bindings -->
+    <div class="sec-label">Cloudflare Bindings</div>
+    <div class="svc-grid">
+      <div class="svc-card" id="d1p" data-tip="Prisma adapter-d1 · WAL mode · 10GB · 30d Time Travel">
+        <div class="svc-head">
+          <div class="svc-ico" style="background:var(--ico-edge)">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><ellipse cx="7" cy="3" rx="5" ry="2" stroke="var(--edge)" stroke-width="1.2"/><path d="M2 3v8c0 1.1 2.24 2 5 2s5-.9 5-2V3" stroke="var(--edge)" stroke-width="1.2"/><line x1="2" y1="7" x2="12" y2="7" stroke="var(--edge)" stroke-width="1.2"/></svg>
+          </div>
+          <div><div class="svc-name">D1 Database</div><div class="svc-bind">sysos-db</div></div>
+          <div class="dot ml"></div>
+        </div>
+        <div class="svc-detail">SQLite · 10GB · WAL · TTR 30d</div>
+      </div>
+
+      <div class="svc-card" id="r2p" data-tip="S3-compatible · Zero egress · CDN via assets.sysos.app · Versioning enabled">
+        <div class="svc-head">
+          <div class="svc-ico" style="background:var(--ico-prod)">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="4" width="10" height="7" rx="1.5" stroke="var(--prod)" stroke-width="1.2"/><path d="M5 4V3a2 2 0 0 1 4 0v1" stroke="var(--prod)" stroke-width="1.2"/></svg>
+          </div>
+          <div><div class="svc-name">R2 Storage</div><div class="svc-bind">sysos-assets</div></div>
+          <div class="dot ml"></div>
+        </div>
+        <div class="svc-detail">Zero egress · CDN · Versioned</div>
+      </div>
+
+      <div class="svc-card" id="kvp" data-tip="Tenant cache TTL 5-10min · Rate limit counters · AI response cache · Feature flags">
+        <div class="svc-head">
+          <div class="svc-ico" style="background:var(--ico-ok)">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="2" width="4.5" height="4.5" rx="1" stroke="var(--ok)" stroke-width="1.2"/><rect x="7.5" y="7.5" width="4.5" height="4.5" rx="1" stroke="var(--ok)" stroke-width="1.2"/><path d="M4.25 6.5v1H9v-1" stroke="var(--ok)" stroke-width="1.2"/></svg>
+          </div>
+          <div><div class="svc-name">Workers KV</div><div class="svc-bind">sysos-kv</div></div>
+          <div class="dot ml"></div>
+        </div>
+        <div class="svc-detail">Cache · Rate limits · Flags</div>
+      </div>
+
+      <div class="svc-card" id="aip" data-tip="GPU inference at edge · llama-3.1-8b · distilbert · bge · Per-tenant quota via KV">
+        <div class="svc-head">
+          <div class="svc-ico" style="background:var(--ico-ai)">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="2.2" fill="var(--edge)" opacity=".7"/><circle cx="3" cy="3" r="1" fill="var(--edge)" opacity=".4"/><circle cx="11" cy="3" r="1" fill="var(--edge)" opacity=".4"/><circle cx="3" cy="11" r="1" fill="var(--edge)" opacity=".4"/><circle cx="11" cy="11" r="1" fill="var(--edge)" opacity=".4"/><path d="M5 7H3M9 7h2M7 5V3M7 9v2" stroke="var(--edge)" stroke-width="1.2"/></svg>
+          </div>
+          <div><div class="svc-name">Workers AI</div><div class="svc-bind">AI binding</div></div>
+          <div class="dot ml"></div>
+        </div>
+        <div class="svc-detail">Llama 3.1 · BGE · BART</div>
+      </div>
+
+      <div class="svc-card" id="dop" data-tip="WebSocket hubs · Distributed locks · Live presence · Auto-placed by CF">
+        <div class="svc-head">
+          <div class="svc-ico" style="background:var(--ico-gray)">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2L12 5v4L7 12 2 9V5L7 2Z" stroke="var(--edge-dim)" stroke-width="1.2"/></svg>
+          </div>
+          <div><div class="svc-name">Durable Objects</div><div class="svc-bind">CHAT_ROOM class</div></div>
+          <div class="dot ml"></div>
+        </div>
+        <div class="svc-detail">WebSockets · Distributed locks</div>
+      </div>
+
+      <div class="svc-card" id="anp" data-tip="Per-tenant events · SQL queries · Real-time dashboards">
+        <div class="svc-head">
+          <div class="svc-ico" style="background:var(--ico-edge)">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><polyline points="2,11 4.5,7 7,9 9.5,4 12,6" stroke="var(--edge)" stroke-width="1.3" fill="none"/></svg>
+          </div>
+          <div><div class="svc-name">Analytics Engine</div><div class="svc-bind">sysos-analytics</div></div>
+          <div class="dot ml"></div>
+        </div>
+        <div class="svc-detail">Per-tenant events · SQL</div>
+      </div>
+    </div>
+
+    <!-- External -->
+    <div class="ext-divider">
+      <div class="sec-label">External Services</div>
+      <div class="svc-grid">
+        <div class="svc-card" id="neonp" data-tip="Heavy reads · Analytics · Prisma adapter-neon · DATABASE_URL secret">
+          <div class="svc-head">
+            <div class="svc-ico" style="background:var(--ico-ok)">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 12V2l8 8V2" stroke="var(--ok)" stroke-width="1.3" stroke-linejoin="round"/></svg>
+            </div>
+            <div><div class="svc-name">Neon PostgreSQL</div><div class="svc-bind">DATABASE_URL</div></div>
+            <div class="dot ml"></div>
+          </div>
+          <div class="svc-detail">Heavy reads · Analytics</div>
+        </div>
+
+        <div class="svc-card" id="resnp" data-tip="Transactional email · RESEND_API_KEY Wrangler secret">
+          <div class="svc-head">
+            <div class="svc-ico" style="background:var(--ico-prod)">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="4" width="10" height="7" rx="1.5" stroke="var(--prod)" stroke-width="1.2"/><path d="M2 5.5l5 3.5 5-3.5" stroke="var(--prod)" stroke-width="1.2"/></svg>
+            </div>
+            <div><div class="svc-name">Resend</div><div class="svc-bind">RESEND_API_KEY</div></div>
+            <div class="dot ml"></div>
+          </div>
+          <div class="svc-detail">Transactional email</div>
+        </div>
+
+        <div class="svc-card full" id="authp" data-tip="JWT · 8h sessions · httpOnly cookie · secure · NEXTAUTH_SECRET Wrangler secret">
+          <div class="svc-head">
+            <div class="svc-ico" style="background:var(--ico-prod)">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2a3 3 0 0 1 3 3v1H4V5a3 3 0 0 1 3-3Z" stroke="var(--prod)" stroke-width="1.2"/><rect x="2" y="6" width="10" height="6" rx="1.5" stroke="var(--prod)" stroke-width="1.2"/><circle cx="7" cy="9" r="1" fill="var(--prod)"/></svg>
+            </div>
+            <div><div class="svc-name">NextAuth v5</div><div class="svc-bind">/api/auth (admin) · /api/portal-auth (employee)</div></div>
+            <div class="dot ml"></div>
+          </div>
+          <div class="svc-detail">JWT · 8h sessions · httpOnly · secure · sameSite:lax · NEXTAUTH_URL=https://sysos.app</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── DEVELOPMENT ────────────────────────────────────────────── -->
+  <div class="env-col dev" id="col-dev">
+    <div class="env-head">
+      <div class="env-title dev"><div class="dot dev"></div>DEVELOPMENT</div>
+      <div class="env-domain">dev.sysos.app · *.dev.sysos.app · NEW worker</div>
+    </div>
+
+    <!-- Workers -->
+    <div class="worker-card dev" id="workers-dev">
+      <div class="worker-head">
+        <div class="worker-hex dev">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 1L15 4.8V13.2L9 17L3 13.2V4.8L9 1Z" stroke="var(--dev)" stroke-width="1.4"/><path d="M9 5.5L12 7.5V11.5L9 13.5L6 11.5V7.5L9 5.5Z" fill="var(--dev)" opacity=".45"/></svg>
+        </div>
+        <div style="flex:1">
+          <div class="worker-name dev">Cloudflare Workers · <span style="opacity:.7">sysos-dev</span></div>
+          <div class="worker-sub">Next.js 15 App Router · opennextjs-cloudflare · Edge SSR · NEW WORKER</div>
+          <div class="worker-tags" style="margin-top:6px">
+            <span class="wtag">nodejs_compat</span><span class="wtag">128MB</span>
+            <span class="wtag">30s timeout</span><span class="wtag">debug logs</span>
+            <span class="wtag">sampling: 1.0</span><span class="wtag">LOG_LEVEL: debug</span>
+          </div>
+        </div>
+        <div class="dot dev ml"></div>
+      </div>
+    </div>
+
+    <!-- Cloudflare bindings -->
+    <div class="sec-label">Cloudflare Bindings — All Isolated from Prod</div>
+    <div class="svc-grid">
+      <div class="svc-card" id="d1d" data-tip="sysos-db-dev · Own schema · Own migrations · Fully isolated">
+        <div class="svc-head">
+          <div class="svc-ico" style="background:var(--ico-edge)">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><ellipse cx="7" cy="3" rx="5" ry="2" stroke="var(--dev)" stroke-width="1.2"/><path d="M2 3v8c0 1.1 2.24 2 5 2s5-.9 5-2V3" stroke="var(--dev)" stroke-width="1.2"/><line x1="2" y1="7" x2="12" y2="7" stroke="var(--dev)" stroke-width="1.2"/></svg>
+          </div>
+          <div><div class="svc-name">D1 Database</div><div class="svc-bind">sysos-db-dev</div></div>
+          <div class="dot dev ml"></div>
+        </div>
+        <div class="svc-detail">Isolated · Own migrations</div>
+      </div>
+
+      <div class="svc-card" id="r2d" data-tip="sysos-assets-dev · All private · No CDN · Isolated from prod">
+        <div class="svc-head">
+          <div class="svc-ico" style="background:var(--ico-dev)">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="4" width="10" height="7" rx="1.5" stroke="var(--dev)" stroke-width="1.2"/><path d="M5 4V3a2 2 0 0 1 4 0v1" stroke="var(--dev)" stroke-width="1.2"/></svg>
+          </div>
+          <div><div class="svc-name">R2 Storage</div><div class="svc-bind">sysos-assets-dev</div></div>
+          <div class="dot dev ml"></div>
+        </div>
+        <div class="svc-detail">Private only · No CDN</div>
+      </div>
+
+      <div class="svc-card" id="kvd" data-tip="sysos-kv-dev · Separate namespace · No prod data leakage">
+        <div class="svc-head">
+          <div class="svc-ico" style="background:var(--ico-dev)">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="2" width="4.5" height="4.5" rx="1" stroke="var(--dev)" stroke-width="1.2"/><rect x="7.5" y="7.5" width="4.5" height="4.5" rx="1" stroke="var(--dev)" stroke-width="1.2"/><path d="M4.25 6.5v1H9v-1" stroke="var(--dev)" stroke-width="1.2"/></svg>
+          </div>
+          <div><div class="svc-name">Workers KV</div><div class="svc-bind">sysos-kv-dev</div></div>
+          <div class="dot dev ml"></div>
+        </div>
+        <div class="svc-detail">Isolated cache namespace</div>
+      </div>
+
+      <div class="svc-card" id="aid" data-tip="Shared neuron budget · Per-tenant quota enforced in KV · Same models as prod">
+        <div class="svc-head">
+          <div class="svc-ico" style="background:var(--ico-ai)">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="2.2" fill="var(--dev)" opacity=".7"/><circle cx="3" cy="3" r="1" fill="var(--dev)" opacity=".4"/><circle cx="11" cy="3" r="1" fill="var(--dev)" opacity=".4"/><circle cx="3" cy="11" r="1" fill="var(--dev)" opacity=".4"/><circle cx="11" cy="11" r="1" fill="var(--dev)" opacity=".4"/><path d="M5 7H3M9 7h2M7 5V3M7 9v2" stroke="var(--dev)" stroke-width="1.2"/></svg>
+          </div>
+          <div><div class="svc-name">Workers AI</div><div class="svc-bind">AI binding</div></div>
+          <div class="dot dev ml"></div>
+        </div>
+        <div class="svc-detail">Shared budget · Quota enforced</div>
+      </div>
+
+      <div class="svc-card" id="dod" data-tip="sysos-do-dev · Verbose logging · Same ChatRoom class · Isolated instances">
+        <div class="svc-head">
+          <div class="svc-ico" style="background:var(--ico-gray)">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2L12 5v4L7 12 2 9V5L7 2Z" stroke="var(--dev-dim)" stroke-width="1.2"/></svg>
+          </div>
+          <div><div class="svc-name">Durable Objects</div><div class="svc-bind">sysos-do-dev</div></div>
+          <div class="dot dev ml"></div>
+        </div>
+        <div class="svc-detail">Verbose logs · Isolated</div>
+      </div>
+
+      <div class="svc-card" id="and" data-tip="sysos-analytics-dev · Separate dataset · Dev events won't pollute prod metrics">
+        <div class="svc-head">
+          <div class="svc-ico" style="background:var(--ico-dev)">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><polyline points="2,11 4.5,7 7,9 9.5,4 12,6" stroke="var(--dev)" stroke-width="1.3" fill="none"/></svg>
+          </div>
+          <div><div class="svc-name">Analytics Engine</div><div class="svc-bind">sysos-analytics-dev</div></div>
+          <div class="dot dev ml"></div>
+        </div>
+        <div class="svc-detail">Isolated dataset</div>
+      </div>
+    </div>
+
+    <!-- External -->
+    <div class="ext-divider">
+      <div class="sec-label">External Services — Separate Credentials</div>
+      <div class="svc-grid">
+        <div class="svc-card" id="neond" data-tip="Separate dev branch · Own DATABASE_URL · No prod data risk">
+          <div class="svc-head">
+            <div class="svc-ico" style="background:var(--ico-ok)">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 12V2l8 8V2" stroke="var(--dev)" stroke-width="1.3" stroke-linejoin="round"/></svg>
+            </div>
+            <div><div class="svc-name">Neon PostgreSQL</div><div class="svc-bind">DATABASE_URL (dev)</div></div>
+            <div class="dot dev ml"></div>
+          </div>
+          <div class="svc-detail">Separate dev branch</div>
+        </div>
+
+        <div class="svc-card" id="resnd" data-tip="Separate dev API key · Emails go to test inbox only">
+          <div class="svc-head">
+            <div class="svc-ico" style="background:var(--ico-dev)">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="4" width="10" height="7" rx="1.5" stroke="var(--dev)" stroke-width="1.2"/><path d="M2 5.5l5 3.5 5-3.5" stroke="var(--dev)" stroke-width="1.2"/></svg>
+            </div>
+            <div><div class="svc-name">Resend</div><div class="svc-bind">RESEND_API_KEY (dev)</div></div>
+            <div class="dot dev ml"></div>
+          </div>
+          <div class="svc-detail">Dev key · Test inbox</div>
+        </div>
+
+        <div class="svc-card full" id="authd" data-tip="Different NEXTAUTH_SECRET · NEXTAUTH_URL=https://dev.sysos.app · Separate JWT secrets">
+          <div class="svc-head">
+            <div class="svc-ico" style="background:var(--ico-dev)">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2a3 3 0 0 1 3 3v1H4V5a3 3 0 0 1 3-3Z" stroke="var(--dev)" stroke-width="1.2"/><rect x="2" y="6" width="10" height="6" rx="1.5" stroke="var(--dev)" stroke-width="1.2"/><circle cx="7" cy="9" r="1" fill="var(--dev)"/></svg>
+            </div>
+            <div><div class="svc-name">NextAuth v5</div><div class="svc-bind">/api/auth (admin) · /api/portal-auth (employee)</div></div>
+            <div class="dot dev ml"></div>
+          </div>
+          <div class="svc-detail">Separate NEXTAUTH_SECRET · NEXTAUTH_URL=https://dev.sysos.app · Isolated JWT</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div><!-- /env-fork -->
+
+<!-- ── MONITORING ───────────────────────────────────────────────── -->
+<div class="monitoring enter v6">
+  <div class="sec-label" style="margin-bottom:10px">Monitoring &amp; Observability · Both Environments</div>
+  <div class="mon-grid">
+    <div class="svc-card">
+      <div class="svc-head">
+        <div class="svc-ico" style="background:var(--ico-edge)">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><polyline points="2,11 4.5,7 7,9 9.5,4 12,6" stroke="var(--edge)" stroke-width="1.3" fill="none"/></svg>
+        </div>
+        <div><div class="svc-name">Analytics Engine</div><div class="svc-bind">sysos-analytics / -dev</div></div>
+        <div class="dot ml"></div>
+      </div>
+      <div class="svc-detail">Per-tenant SQL events · Real-time · Separate datasets</div>
+    </div>
+    <div class="svc-card">
+      <div class="svc-head">
+        <div class="svc-ico" style="background:var(--ico-gray)">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="4.5" stroke="var(--t2)" stroke-width="1.2"/><path d="M7 4.5v2.5l1.5 1.5" stroke="var(--t2)" stroke-width="1.2"/></svg>
+        </div>
+        <div><div class="svc-name">Observability</div><div class="svc-bind">Workers built-in</div></div>
+        <div class="dot ml"></div>
+      </div>
+      <div class="svc-detail">Dev 100% sampling · Prod 10% · Errors always</div>
+    </div>
+    <div class="svc-card">
+      <div class="svc-head">
+        <div class="svc-ico" style="background:var(--ico-ok)">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h7M6 4.5L8.5 7 6 9.5" stroke="var(--ok)" stroke-width="1.3"/><circle cx="11.5" cy="7" r="1.5" fill="var(--ok)"/></svg>
+        </div>
+        <div><div class="svc-name">Logpush</div><div class="svc-bind">Production only</div></div>
+        <div class="dot ml"></div>
+      </div>
+      <div class="svc-detail">R2 · Datadog · Long-term retention</div>
+    </div>
+    <div class="svc-card">
+      <div class="svc-head">
+        <div class="svc-ico" style="background:var(--ico-sec)">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v4M7 8v4M2 7h4M8 7h4" stroke="var(--sec)" stroke-width="1.2"/><circle cx="7" cy="7" r="2.2" stroke="var(--sec)" stroke-width="1.2"/></svg>
+        </div>
+        <div><div class="svc-name">Health Check</div><div class="svc-bind">/api/health · Both envs</div></div>
+        <div class="dot ml"></div>
+      </div>
+      <div class="svc-detail">D1 + KV probe · env field in response</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── LEGEND ────────────────────────────────────────────────────── -->
+<div class="legend enter v7">
+  <span class="legend-label">LEGEND</span>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--prod)"></div>Production</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--dev)"></div>Development</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--edge)"></div>Cloudflare Edge</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--ok)"></div>Healthy</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:var(--sec)"></div>Security</div>
+  <div class="legend-item"><div class="legend-swatch" style="border:1px dashed var(--prod-muted);background:transparent"></div>Manual gate</div>
+  <div class="legend-item"><span style="font-family:var(--mono);font-size:9px;color:var(--edge)">---→</span>Prod data flow</div>
+  <div class="legend-item"><span style="font-family:var(--mono);font-size:9px;color:var(--dev)">---→</span>Dev data flow</div>
+  <div class="legend-note">Hover any card for details · All environments fully isolated · No shared resources</div>
+</div>
+
+</div><!-- /page -->
+
+<script>
+// ── SVG CONNECTIONS ─────────────────────────────────────────────
+function drawFlows() {
+  const svg = document.getElementById('flow-svg');
+  const page = document.getElementById('page');
+  const pr = page.getBoundingClientRect();
+
+  svg.setAttribute('width', page.offsetWidth);
+  svg.setAttribute('height', page.scrollHeight);
+  svg.setAttribute('viewBox', `0 0 ${page.offsetWidth} ${page.scrollHeight}`);
+  svg.innerHTML = '';
+
+  const ns = 'http://www.w3.org/2000/svg';
+
+  function center(id) {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return {
+      x:  r.left - pr.left + r.width / 2,
+      y:  r.top  - pr.top  + r.height / 2,
+      t:  r.top  - pr.top,
+      b:  r.top  - pr.top  + r.height,
+      l:  r.left - pr.left,
+      r:  r.left - pr.left + r.width,
+    };
+  }
+
+  const C_PROD = 'oklch(34% 0.08 40)';
+  const C_DEV  = 'oklch(32% 0.08 193)';
+  const C_EDGE = 'oklch(30% 0.07 278)';
+
+  function addPath(d, color, id) {
+    const p = document.createElementNS(ns, 'path');
+    p.setAttribute('d', d);
+    p.setAttribute('fill', 'none');
+    p.setAttribute('stroke', color);
+    p.setAttribute('stroke-width', '1.4');
+    p.setAttribute('stroke-dasharray', '5 4');
+    p.setAttribute('id', id || ('p' + Math.random().toString(36).slice(2)));
+    p.style.animation = `dash-anim ${2 + Math.random()}s linear infinite`;
+    p.style.animationDelay = `${Math.random() * 2}s`;
+    svg.appendChild(p);
+    return p;
+  }
+
+  function addParticle(pathId, color, dur, delay) {
+    const c = document.createElementNS(ns, 'circle');
+    c.setAttribute('r', '3');
+    c.setAttribute('fill', color);
+    c.setAttribute('opacity', '.9');
+    const am = document.createElementNS(ns, 'animateMotion');
+    am.setAttribute('dur', dur + 's');
+    am.setAttribute('repeatCount', 'indefinite');
+    am.setAttribute('begin', delay + 's');
+    const mp = document.createElementNS(ns, 'mpath');
+    mp.setAttribute('href', '#' + pathId);
+    am.appendChild(mp);
+    c.appendChild(am);
+    svg.appendChild(c);
+  }
+
+  function connect(fromId, toId, fromSide, toSide, color, particleColor, pid) {
+    const from = center(fromId);
+    const to   = center(toId);
+    if (!from || !to) return;
+
+    let x1, y1, x2, y2;
+    if (fromSide === 'b') { x1 = from.x; y1 = from.b; }
+    else if (fromSide === 'r') { x1 = from.r; y1 = from.y; }
+    else if (fromSide === 'l') { x1 = from.l; y1 = from.y; }
+    else { x1 = from.x; y1 = from.t; }
+
+    if (toSide === 't') { x2 = to.x; y2 = to.t; }
+    else if (toSide === 'l') { x2 = to.l; y2 = to.y; }
+    else if (toSide === 'r') { x2 = to.r; y2 = to.y; }
+    else { x2 = to.x; y2 = to.b; }
+
+    const dy = Math.abs(y2 - y1) * 0.5;
+    const d = `M${x1},${y1} C${x1},${y1 + dy} ${x2},${y2 - dy} ${x2},${y2}`;
+    const p = addPath(d, color, pid);
+    const dur = 3 + Math.random() * 2;
+    addParticle(p.id, particleColor, dur, Math.random() * 2);
+    addParticle(p.id, particleColor, dur, dur / 2 + Math.random());
+  }
+
+  // Edge → Workers (prod + dev)
+  connect('edge', 'workers-prod', 'b', 't', C_PROD, 'oklch(62% 0.16 40)', 'ep');
+  connect('edge', 'workers-dev',  'b', 't', C_DEV,  'oklch(59% 0.15 193)', 'ed');
+
+  // Workers → D1, R2, KV (prod)
+  connect('workers-prod', 'd1p', 'b', 't', C_PROD, 'oklch(62% 0.16 40)', 'pd1');
+  connect('workers-prod', 'r2p', 'b', 't', C_PROD, 'oklch(62% 0.16 40)', 'pr2');
+  connect('workers-prod', 'kvp', 'b', 't', C_PROD, 'oklch(62% 0.16 40)', 'pkv');
+  connect('workers-prod', 'aip', 'b', 't', C_PROD, 'oklch(62% 0.16 40)', 'pai');
+
+  // Workers → D1, R2, KV (dev)
+  connect('workers-dev', 'd1d', 'b', 't', C_DEV, 'oklch(59% 0.15 193)', 'dd1');
+  connect('workers-dev', 'r2d', 'b', 't', C_DEV, 'oklch(59% 0.15 193)', 'dr2');
+  connect('workers-dev', 'kvd', 'b', 't', C_DEV, 'oklch(59% 0.15 193)', 'dkv');
+  connect('workers-dev', 'aid', 'b', 't', C_DEV, 'oklch(59% 0.15 193)', 'dai');
+}
+
+setTimeout(drawFlows, 400);
+window.addEventListener('resize', () => setTimeout(drawFlows, 100));
+
+// ── CICD ANIMATION ──────────────────────────────────────────────
+const devSteps  = ['cs-github','cs-build','cs-migdev','cs-depdev','cs-smoke'];
+const prodSteps = ['cs-migprod','cs-depprod','cs-health'];
+
+function flashCICD() {
+  devSteps.forEach((id, i) => {
+    setTimeout(() => {
+      const n = document.getElementById(id);
+      if (!n) return;
+      n.style.animation = 'cicd-flash-dev .6s ease-out';
+      setTimeout(() => { n.style.animation = ''; }, 700);
+    }, i * 420);
+  });
+  const offset = devSteps.length * 420 + 900;
+  prodSteps.forEach((id, i) => {
+    setTimeout(() => {
+      const n = document.getElementById(id);
+      if (!n) return;
+      n.style.animation = 'cicd-flash-prod .6s ease-out';
+      setTimeout(() => { n.style.animation = ''; }, 700);
+    }, offset + i * 420);
+  });
+}
+setTimeout(flashCICD, 1800);
+setInterval(flashCICD, 14000);
+
+// ── LIVE COUNTER UPDATE ─────────────────────────────────────────
+function randomFlicker() {
+  const dots = document.querySelectorAll('.dot');
+  const i = Math.floor(Math.random() * dots.length);
+  const d = dots[i];
+  const was = d.style.background;
+  d.style.background = 'oklch(74% 0.15 82)'; // warning yellow
+  setTimeout(() => { d.style.background = was; }, 900);
+}
+setInterval(randomFlicker, 7500);
+
+// ── THEME TOGGLE ─────────────────────────────────────────────────
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') !== 'light';
+  const moon = document.getElementById('theme-icon-moon');
+  const sun  = document.getElementById('theme-icon-sun');
+  const lbl  = document.getElementById('theme-label');
+  const btn  = document.getElementById('theme-toggle');
+  if (isDark) {
+    html.setAttribute('data-theme', 'light');
+    moon.style.display = 'none';
+    sun.style.display  = 'block';
+    lbl.textContent    = 'Dark';
+    btn.setAttribute('aria-pressed', 'true');
+    btn.setAttribute('aria-label', 'Switch to dark mode');
+  } else {
+    html.removeAttribute('data-theme');
+    moon.style.display = 'block';
+    sun.style.display  = 'none';
+    lbl.textContent    = 'Light';
+    btn.setAttribute('aria-pressed', 'false');
+    btn.setAttribute('aria-label', 'Switch to light mode');
+  }
+  setTimeout(drawFlows, 50);
+}
+</script>
+</body>
+</html>
